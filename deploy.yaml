@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: 503server
+  labels:
+    app: 503server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: 503server
+  template:
+    metadata:
+      labels:
+        app: 503server
+    spec:
+      containers:
+      - name: 503server
+        image: quay.io/rh_ee_addrew/503server:latest
+        ports:
+        - containerPort: 8080
+        securityContext:
+          runAsNonRoot: true  # Ensure the container runs as non-root
+          allowPrivilegeEscalation: false
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: 503server
+spec:
+  selector:
+    app: 503server
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
+
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: 503server
+spec:
+  to:
+    kind: Service
+    name: 503server
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge
+  wildcardPolicy: None
